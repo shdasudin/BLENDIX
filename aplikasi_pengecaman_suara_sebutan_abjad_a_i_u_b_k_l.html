@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengecaman Suara & Sebutan: Abjad a, i, u, b, k, l</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font: Fredoka & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        fredoka: ['Fredoka', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            purple: '#7C3AED',
+                            pink: '#EC4899',
+                            amber: '#F59E0B',
+                            emerald: '#10B981',
+                            sky: '#0284C7',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Fredoka', 'Inter', sans-serif;
+            background-color: #F8FAFC;
+        }
+
+        /* Pulse animation for mic recording */
+        @keyframes micPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        .recording-pulse {
+            animation: micPulse 1.5s infinite;
+        }
+
+        /* Gentle float animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Sound wave animation */
+        @keyframes wave {
+            0%, 100% { height: 8px; }
+            50% { height: 28px; }
+        }
+
+        .wave-bar {
+            width: 5px;
+            background-color: #EF4444;
+            border-radius: 9999px;
+            animation: wave 1s infinite ease-in-out;
+        }
+
+        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.6s; }
+
+        /* Confetti pop effect */
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .pop-in {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800 flex flex-col justify-between">
+
+    <!-- Header Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-white text-xl shadow-md">
+                    <i class="fa-solid fa-microphone-lines"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-slate-800 leading-tight">Sebutan Suara Interaktif</h1>
+                    <p class="text-xs font-semibold text-purple-600">Vokal (a, i, u) & Konsonan (b, k, l)</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full text-amber-700 font-bold text-sm">
+                    <i class="fa-solid fa-star text-amber-500"></i>
+                    <span id="starScore">0</span>
+                </div>
+                <div class="flex items-center gap-1.5 bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-full text-purple-700 font-bold text-sm">
+                    <i class="fa-solid fa-fire text-orange-500"></i>
+                    <span id="streakCount">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-grow flex flex-col gap-6">
+
+        <!-- Category Tabs -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button id="tabSukuKata" onclick="switchCategory('sukukata')" class="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 bg-purple-600 text-white shadow-sm">
+                    <i class="fa-solid fa-shapes"></i> Suku Kata (KVK)
+                </button>
+                <button id="tabPerkataan" onclick="switchCategory('perkataan')" class="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200">
+                    <i class="fa-solid fa-book-open"></i> Perkataan (KVKV)
+                </button>
+            </div>
+
+            <div class="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 w-full sm:w-auto text-center">
+                Soalan <span id="currentIndexText" class="text-purple-600 font-bold">1</span> daripada <span id="totalItemsText" class="font-bold">12</span>
+            </div>
+        </div>
+
+        <!-- Main Voice Card -->
+        <section class="bg-white rounded-3xl border border-slate-200 p-6 md:p-10 shadow-lg relative overflow-hidden flex flex-col items-center text-center">
+            
+            <!-- Top Target Label -->
+            <div class="mb-2">
+                <span id="categoryBadge" class="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    Suku Kata
+                </span>
+            </div>
+
+            <!-- Phonetic / Suku Kata Display -->
+            <div class="my-4 animate-float">
+                <div id="wordDisplay" class="text-6xl md:text-8xl font-extrabold tracking-wide text-slate-800 drop-shadow-sm transition-all">
+                    ba
+                </div>
+                <!-- Syllable breakdown helper -->
+                <div id="syllableBreakdown" class="mt-2 text-slate-400 font-semibold text-lg md:text-xl flex items-center justify-center gap-2">
+                    <!-- Dynamic Syllables -->
+                </div>
+            </div>
+
+            <!-- Action Buttons: Audio Sample & Mic -->
+            <div class="flex flex-col sm:flex-row items-center gap-4 my-6 w-full max-w-xs sm:max-w-md justify-center">
+                <!-- Listen First Button -->
+                <button onclick="playTargetAudio()" class="w-full sm:w-auto flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 px-6 rounded-2xl border border-slate-300 transition flex items-center justify-center gap-2 shadow-sm active:scale-95">
+                    <i class="fa-solid fa-volume-high text-purple-600 text-lg"></i>
+                    <span>Dengar Contoh</span>
+                </button>
+
+                <!-- Record Button -->
+                <button id="micBtn" onclick="toggleRecording()" class="w-full sm:w-auto flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition flex items-center justify-center gap-3 active:scale-95">
+                    <i id="micIcon" class="fa-solid fa-microphone text-xl"></i>
+                    <span id="micStatusText">Sebut Sekarang</span>
+                </button>
+            </div>
+
+            <!-- Live Recording Wave visualizer (Hidden by default) -->
+            <div id="recordingWave" class="hidden flex items-center gap-1 h-8 my-2">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <span class="text-xs text-red-500 font-bold ml-2">Mendengar sebutan anda...</span>
+            </div>
+
+            <!-- Live Recognition Result Box -->
+            <div id="resultBox" class="w-full max-w-md mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 hidden transition-all pop-in">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Suara Yang Dikesan:</div>
+                <div id="userTranscript" class="text-xl font-bold text-slate-700 italic">"..."</div>
+                
+                <!-- Feedback Banner -->
+                <div id="feedbackMessage" class="mt-3 p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+                    <!-- Dynamic feedback inserted here -->
+                </div>
+            </div>
+
+            <!-- Browser Speech Support Alert / Fallback notice -->
+            <div id="speechUnsupportedNotice" class="hidden mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-xl max-w-md text-left flex gap-2">
+                <i class="fa-solid fa-circle-info text-amber-500 text-base flex-shrink-0 mt-0.5"></i>
+                <div>
+                    <strong>Mod Manual Aktif:</strong> Pelayar anda tidak menyokong Pengecaman Suara automatik. Anda boleh tekan button <strong>"Dengar Contoh"</strong> dan buat penilaian kendiri!
+                </div>
+            </div>
+
+            <!-- Bottom Control Buttons -->
+            <div class="flex items-center justify-between w-full mt-6 pt-6 border-t border-slate-100">
+                <button onclick="previousItem()" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-chevron-left"></i> Sebelum
+                </button>
+                <button onclick="nextItem()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm flex items-center gap-2 transition shadow-sm">
+                    Seterusnya <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Practice Grid Selector -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-grid-2 text-purple-600"></i> Pilih Kad Latihan
+            </h3>
+            <div id="itemGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                <!-- Grid buttons dynamically injected -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        <div class="max-w-4xl mx-auto px-4">
+            Aplikasi Pembelajaran Membaca & Sebutan • Fonik Abjad <strong>a, i, u</strong> & <strong>b, k, l</strong>
+        </div>
+    </footer>
+
+    <script>
+        // Datasets strictly focused on vowels (a, i, u) and consonants (b, k, l)
+        const sukuKataList = [
+            { id: 1, text: "ba", syllables: ["b", "a"], example: "ba-tu" },
+            { id: 2, text: "bi", syllables: ["b", "i"], example: "bi-la" },
+            { id: 3, text: "bu", syllables: ["b", "u"], example: "bu-ku" },
+            { id: 4, text: "ka", syllables: ["k", "a"], example: "ka-ki" },
+            { id: 5, text: "ki", syllables: ["k", "i"], example: "ki-ta" },
+            { id: 6, text: "ku", syllables: ["k", "u"], example: "ku-ku" },
+            { id: 7, text: "la", syllables: ["l", "a"], example: "la-bu" },
+            { id: 8, text: "li", syllables: ["l", "i"], example: "li-ma" },
+            { id: 9, text: "lu", syllables: ["l", "u"], example: "lu-ka" }
+        ];
+
+        const perkataanList = [
+            { id: 1, text: "buku", syllables: ["bu", "ku"], meaning: "Buku bacaan" },
+            { id: 2, text: "kaki", syllables: ["ka", "ki"], meaning: "Anggota kaki" },
+            { id: 3, text: "luka", syllables: ["lu", "ka"], meaning: "Luka pada kulit" },
+            { id: 4, text: "labu", syllables: ["la", "bu"], meaning: "Buah labu" },
+            { id: 5, text: "buka", syllables: ["bu", "ka"], meaning: "Buka pintu/buku" },
+            { id: 6, text: "bila", syllables: ["bi", "la"], meaning: "Bila-bila masa" },
+            { id: 7, text: "kuku", syllables: ["ku", "ku"], meaning: "Kuku jari" },
+            { id: 8, text: "kali", syllables: ["ka", "li"], meaning: "Berapa kali" },
+            { id: 9, text: "bulu", syllables: ["bu", "lu"], meaning: "Bulu halus" },
+            { id: 10, text: "bali", syllables: ["ba", "li"], meaning: "Pulau Bali" }
+        ];
+
+        // App state variables
+        let currentCategory = 'sukukata'; // 'sukukata' or 'perkataan'
+        let currentIndex = 0;
+        let starScore = 0;
+        let streakCount = 0;
+        let isRecording = false;
+        let recognition = null;
+        let audioCtx = null;
+
+        // Web Audio API Synthesizer for sound effects
+        function playTone(type) {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'success') {
+                    // Upward Arpeggio
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                } else if (type === 'tryAgain') {
+                    // Low gentle error sound
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now); // A3
+                    osc.frequency.setValueAtTime(180, now + 0.15); // Low A3
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'pop') {
+                    // Click/Pop tone
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                }
+            } catch (e) {
+                console.log("Audio synth error:", e);
+            }
+        }
+
+        // Initialize Speech Recognition
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                document.getElementById('speechUnsupportedNotice').classList.remove('hidden');
+                return null;
+            }
+
+            const rec = new SpeechRecognition();
+            rec.continuous = false;
+            rec.interimResults = false;
+            rec.lang = 'ms-MY'; // Bahasa Melayu
+
+            rec.onstart = function() {
+                isRecording = true;
+                updateMicUI(true);
+            };
+
+            rec.onresult = function(event) {
+                const transcript = event.results[0][0].transcript.toLowerCase().trim();
+                const confidence = event.results[0][0].confidence;
+                processSpeechResult(transcript, confidence);
+            };
+
+            rec.onerror = function(event) {
+                console.warn("Speech recognition error:", event.error);
+                stopRecordingUI();
+                showFeedback(false, `Tidak dapat mengecam suara (${event.error}). Sila cuba lagi!`);
+            };
+
+            rec.onend = function() {
+                stopRecordingUI();
+            };
+
+            return rec;
+        }
+
+        // Play Target Audio using Web SpeechSynthesis
+        function playTargetAudio() {
+            playTone('pop');
+            const dataset = currentCategory === 'sukukata' ? sukuKataList : perkataanList;
+            const targetText = dataset[currentIndex].text;
+
+            if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(targetText);
+                utterance.lang = 'ms-MY'; // Malay accent
+                utterance.rate = 0.8; // Slightly slower speed for kids
+                utterance.pitch = 1.1; // Slightly higher pitch for clarity
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert("Sistem pembaca suara tidak disokong oleh pelayar anda.");
+            }
+        }
+
+        // Toggle Recording
+        function toggleRecording() {
+            if (!recognition) {
+                recognition = initSpeechRecognition();
+            }
+
+            if (!recognition) {
+                // Fallback if recognition is unsupported
+                playTargetAudio();
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+                stopRecordingUI();
+            } else {
+                try {
+                    // Clear previous results
+                    document.getElementById('resultBox').classList.add('hidden');
+                    recognition.start();
+                } catch (err) {
+                    console.error("Start recording error:", err);
+                    recognition.stop();
+                    stopRecordingUI();
+                }
+            }
+        }
+
+        function updateMicUI(recording) {
+            const micBtn = document.getElementById('micBtn');
+            const micIcon = document.getElementById('micIcon');
+            const micText = document.getElementById('micStatusText');
+            const wave = document.getElementById('recordingWave');
+
+            if (recording) {
+                micBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                micBtn.classList.add('bg-slate-800', 'recording-pulse');
+                micIcon.className = 'fa-solid fa-square text-red-500 text-xl';
+                micText.innerText = 'Berhenti';
+                wave.classList.remove('hidden');
+            } else {
+                stopRecordingUI();
+            }
+        }
+
+        function stopRecordingUI() {
+            isRecording = false;
+            const micBtn = document.getElementById('micBtn');
+            const micIcon = document.getElementById('micIcon');
+            const micText = document.getElementById('micStatusText');
+            const wave = document.getElementById('recordingWave');
+
+            micBtn.classList.remove('bg-slate-800', 'recording-pulse');
+            micBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            micIcon.className = 'fa-solid fa-microphone text-xl';
+            micText.innerText = 'Sebut Sekarang';
+            wave.classList.add('hidden');
+        }
+
+        // Normalize speech strings for standard Malay comparison
+        function normalizeString(str) {
+            return str
+                .toLowerCase()
+                .replace(/[^a-z]/g, '') // remove non-alpha characters
+                .trim();
+        }
+
+        // Speech accuracy checking
+        function processSpeechResult(transcript, confidence) {
+            const dataset = currentCategory === 'sukukata' ? sukuKataList : perkataanList;
+            const targetText = dataset[currentIndex].text;
+            
+            const cleanUser = normalizeString(transcript);
+            const cleanTarget = normalizeString(targetText);
+
+            document.getElementById('userTranscript').innerText = `"${transcript}"`;
+            document.getElementById('resultBox').classList.remove('hidden');
+
+            // Direct match or partial match for kids speech
+            const isMatch = cleanUser === cleanTarget || cleanUser.includes(cleanTarget) || cleanTarget.includes(cleanUser);
+
+            if (isMatch) {
+                starScore += 10;
+                streakCount += 1;
+                playTone('success');
+                showFeedback(true, `Tahniah! Sebutan "${transcript}" adalah TEPAT! 🎉`);
+            } else {
+                streakCount = 0;
+                playTone('tryAgain');
+                showFeedback(false, `Sebutan dikesan "${transcript}". Cuba sebut sekali lagi dengan jelas!`);
+            }
+
+            updateScoreboard();
+        }
+
+        function showFeedback(isCorrect, message) {
+            const fb = document.getElementById('feedbackMessage');
+            if (isCorrect) {
+                fb.className = 'mt-3 p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-emerald-100 text-emerald-800 border border-emerald-200';
+                fb.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i> ${message}`;
+            } else {
+                fb.className = 'mt-3 p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-amber-100 text-amber-800 border border-amber-200';
+                fb.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber-600 text-lg"></i> ${message}`;
+            }
+        }
+
+        function updateScoreboard() {
+            document.getElementById('starScore').innerText = starScore;
+            document.getElementById('streakCount').innerText = streakCount;
+        }
+
+        // Render Active Word/Syllable Card
+        function renderCard() {
+            const dataset = currentCategory === 'sukukata' ? sukuKataList : perkataanList;
+            const currentItem = dataset[currentIndex];
+
+            // Hide previous results
+            document.getElementById('resultBox').classList.add('hidden');
+
+            // Update main display word
+            const wordDisplay = document.getElementById('wordDisplay');
+            wordDisplay.innerText = currentItem.text;
+
+            // Syllable breakdown display
+            const breakdownContainer = document.getElementById('syllableBreakdown');
+            breakdownContainer.innerHTML = '';
+
+            currentItem.syllables.forEach((syl, idx) => {
+                const span = document.createElement('span');
+                span.className = idx % 2 === 0 ? 'text-purple-600 font-bold' : 'text-pink-500 font-bold';
+                span.innerText = syl;
+                breakdownContainer.appendChild(span);
+
+                if (idx < currentItem.syllables.length - 1) {
+                    const dash = document.createElement('span');
+                    dash.className = 'text-slate-300 font-normal';
+                    dash.innerText = '•';
+                    breakdownContainer.appendChild(dash);
+                }
+            });
+
+            // Update header text counts
+            document.getElementById('currentIndexText').innerText = currentIndex + 1;
+            document.getElementById('totalItemsText').innerText = dataset.length;
+
+            // Update Badge
+            const badge = document.getElementById('categoryBadge');
+            if (currentCategory === 'sukukata') {
+                badge.innerText = `Suku Kata (${currentItem.example || ''})`;
+                badge.className = 'bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider';
+            } else {
+                badge.innerText = `Perkataan: ${currentItem.meaning || ''}`;
+                badge.className = 'bg-pink-100 text-pink-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider';
+            }
+
+            // Render Item Grid
+            renderGrid();
+        }
+
+        // Render Practice Grid Buttons
+        function renderGrid() {
+            const gridContainer = document.getElementById('itemGrid');
+            gridContainer.innerHTML = '';
+            const dataset = currentCategory === 'sukukata' ? sukuKataList : perkataanList;
+
+            dataset.forEach((item, idx) => {
+                const btn = document.createElement('button');
+                const isActive = idx === currentIndex;
+
+                btn.className = `py-2.5 px-3 rounded-xl font-bold text-sm transition text-center flex flex-col items-center justify-center border ${
+                    isActive 
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-md scale-105' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-purple-50 hover:border-purple-300'
+                }`;
+
+                btn.onclick = () => {
+                    playTone('pop');
+                    currentIndex = idx;
+                    renderCard();
+                };
+
+                btn.innerHTML = `<span>${item.text}</span>`;
+                gridContainer.appendChild(btn);
+            });
+        }
+
+        // Switch between 'sukukata' and 'perkataan'
+        function switchCategory(category) {
+            playTone('pop');
+            currentCategory = category;
+            currentIndex = 0;
+
+            const tabSukuKata = document.getElementById('tabSukuKata');
+            const tabPerkataan = document.getElementById('tabPerkataan');
+
+            if (category === 'sukukata') {
+                tabSukuKata.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 bg-purple-600 text-white shadow-sm';
+                tabPerkataan.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200';
+            } else {
+                tabPerkataan.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 bg-purple-600 text-white shadow-sm';
+                tabSukuKata.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200';
+            }
+
+            renderCard();
+        }
+
+        function nextItem() {
+            playTone('pop');
+            const dataset = currentCategory === 'sukukata' ? sukuKataList : perkataanList;
+            if (currentIndex < dataset.length - 1) {
+                currentIndex++;
+            } else {
+                currentIndex = 0; // Loop back
+            }
+            renderCard();
+        }
+
+        function previousItem() {
+            playTone('pop');
+            const dataset = currentCategory === 'sukukata' ? sukuKataList : perkataanList;
+            if (currentIndex > 0) {
+                currentIndex--;
+            } else {
+                currentIndex = dataset.length - 1;
+            }
+            renderCard();
+        }
+
+        // Window Onload Initialization
+        window.onload = function() {
+            initSpeechRecognition();
+            renderCard();
+        };
+    </script>
+</body>
+</html>
